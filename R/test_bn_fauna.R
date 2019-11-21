@@ -13,9 +13,6 @@
 #' @export
 test_bn_fauna <- function(bn_fitted_list, fauna_geom, species_var, geom,
     covs_paths, crs = "lcc_mex") {
-    if (crs == "lcc_mex") {
-        crs <- "+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=12 +lon_0=-102 +x_0=2500000 +y_0=0 +datum=WGS84 +units=m +no_defs"
-    }
     fauna_covs <- prep_geom_data(fauna_geom, {{species_var}}, geom,
         covs_paths, crs = crs)
     fauna_df_list <- fauna_covs[[1]]
