@@ -12,12 +12,9 @@
 #' @export
 fit_bn_fauna <- function(fauna_geom, species_var, geom, covs_paths,
     crs = "lcc_mex") {
-    if (crs == "lcc_mex") {
-        crs <- "+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=12 +lon_0=-102 +x_0=2500000 +y_0=0 +datum=WGS84 +units=m +no_defs"
-    }
     fauna_df_list <- prep_geom_data(fauna_geom, {{species_var}}, geom,
         covs_paths, crs = crs)[[1]]
-    fauna_bn_list <- purrr::map(fauna_df_list, bn_species_fit)
+    fauna_bn_list <- purrr::map(fauna_df_list, fit_bn_str)
     fauna_bn_list
 }
 
@@ -28,8 +25,8 @@ prep_geom_data <- function(fauna_geom, species_var, geom, covs_paths, crs) {
     #' returns a list with an entry per species, each entry contains a data
     #' frame of categorized covarites suitable for fitting/evaluating a BN
     # covariates
-    covs <- prep_geom_covs(covs_paths, geom)
-    covs_df <- covs$covs_df
+    covs <- prep_geom_vars(covs_paths, geom, crs)
+    covs_df <- covs$vars_df
     # fauna
     fauna_df <- prep_geom_fauna(fauna_geom, geom, covs$raster_id)
     # fauna & covariates
@@ -45,36 +42,6 @@ prep_geom_data <- function(fauna_geom, species_var, geom, covs_paths, crs) {
         covs_df = covs_df %>% dplyr::select(-id) %>% dplyr::distinct())
 }
 
-prep_geom_covs <- function(covs_paths, geom) {
-    #' Creates a data.frame with covariates from rasters.
-    #'
-    #' Reads tif files of discretized covariates and id variable,
-    #' cuts rasters with polygons in geom, returns data.frame with numerical
-    #' variables (except for coordinates and id)
-    #' covs_paths paths to rasters with covariates to consider
-    #' geom sf to cut and mask brick of covariates
-    #'
-    covs_names <- tools::file_path_sans_ext(basename(covs_paths))
-    covs_paths <- purrr::set_names(covs_paths, covs_names)
-    covs_list <- purrr::map(covs_paths, raster::raster) %>%
-        purrr::map(raster::crop, y = geom) %>%
-        purrr::map(raster::mask, mask = geom)
-
-    covs_brick <- covs_list %>%
-        raster::stack()
-    covs_df <- raster::as.data.frame(covs_brick, xy = TRUE, na.rm = FALSE) %>%
-        dplyr::mutate_if(is.factor, ~forcats::fct_drop(., only = "")) %>%
-        tidyr::drop_na()
-    # discretize zone life
-    if ("zvh_p_hgw" %in% colnames(covs_df)) {
-        covs_df$zvh_p_hgw <- factor(covs_df$zvh_p_hgw, levels = 1:11)
-    } else if ("zvh_31" %in% colnames(covs_df)) {
-        covs_df$zvh_31 <- factor(covs_df$zvh_31, levels = 1:31)
-    }
-    list(covs_df = dplyr::rename(covs_df, id = dplyr::contains("id")),
-        raster_id = covs_list[[stringr::str_subset(names(covs_list), "id")]])
-}
-
 prep_geom_fauna <- function(fauna_geom, geom, raster_id) {
     # called by prep_geom_data intersects fauna's sf with geom and extracts
     # ids from raster_id
@@ -86,7 +53,7 @@ prep_geom_fauna <- function(fauna_geom, geom, raster_id) {
         tidyr::drop_na()
     fauna_geom
 }
-bn_species_fit <- function(bn_data, bn_str) {
+fit_bn_str <- function(bn_data, bn_str) {
     #' called by fit_bn_fauna, Fits BN to subset of data for a given species
     #' bn_str: BN structure can be fixed
     bn_data <- as.data.frame(bn_data)
