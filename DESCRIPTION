@@ -21,5 +21,7 @@ Imports:
     forcats,
     tidyr,
     tibble,
-    purrr
+    purrr,
+    gRain,
+    gRbase
 RoxygenNote: 6.1.1
