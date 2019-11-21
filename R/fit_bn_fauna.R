@@ -41,7 +41,6 @@ prep_geom_data <- function(fauna_geom, species_var, geom, covs_paths, crs) {
     list(fauna_df_list = fauna_df_list,
         covs_df = covs_df %>% dplyr::select(-id) %>% dplyr::distinct())
 }
-
 prep_geom_fauna <- function(fauna_geom, geom, raster_id) {
     # called by prep_geom_data intersects fauna's sf with geom and extracts
     # ids from raster_id
@@ -52,16 +51,6 @@ prep_geom_fauna <- function(fauna_geom, geom, raster_id) {
         dplyr::distinct() %>%
         tidyr::drop_na()
     fauna_geom
-}
-fit_bn_str <- function(bn_data, bn_str) {
-    #' called by fit_bn_fauna, Fits BN to subset of data for a given species
-    #' bn_str: BN structure can be fixed
-    bn_data <- as.data.frame(bn_data)
-    if (missing(bn_str)) {
-        bn_str <- bnlearn::hc(bn_data, score = 'k2')
-    }
-    bn_fit <- bnlearn::bn.fit(bn_str, bn_data, method = 'bayes', iss = 4)
-    list(bn_fit = bn_fit, bn_str = bn_str)
 }
 prep_data_bn <- function(data_sp) {
     # called by prep_geom_data preparesdata per species (deletes dulpicates and
