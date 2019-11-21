@@ -22,7 +22,7 @@ test_bn_fauna <- function(bn_fitted_list, fauna_geom, species_var, geom,
     covs_df <- fauna_covs[[2]] %>%
         dplyr::select(-x, -y) %>%
         dplyr::distinct()
-    esp_logliks <- purrr::map_dfc(bn_fitted_list, ~logLik(.$bn_fit,
+    esp_logliks <- purrr::map_dfc(bn_fitted_list, ~logLik(.$fit,
         covs_df, by.sample = TRUE))
     all <- esp_logliks %>%
         dplyr::bind_cols(covs_df) %>%

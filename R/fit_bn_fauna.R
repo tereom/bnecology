@@ -21,15 +21,18 @@ fit_bn_fauna <- function(fauna_geom, species_var, geom, covs_paths,
 prep_geom_data <- function(fauna_geom, species_var, geom, covs_paths, crs) {
     #' called by fit_bn_fauna, prepares data to fit BNs or to evaluate
     #' likelihood
-    #  covs_ind: indices of rasters with covariates to consider
+    #  covs_paths: paths to rasters with covariates to consider
     #' returns a list with an entry per species, each entry contains a data
     #' frame of categorized covarites suitable for fitting/evaluating a BN
     # covariates
+    #
+    # prep_geom_vars: create data.frame with covariares
     covs <- prep_geom_vars(covs_paths, geom, crs)
     covs_df <- covs$vars_df
-    # fauna
+    # fprep_geom_fauna: intersects fauna's sf with analysis geom and extracts
+    # ids from raster_id
     fauna_df <- prep_geom_fauna(fauna_geom, geom, covs$raster_id)
-    # fauna & covariates
+    # match fauna & covariates
     fauna_covs <- fauna_df %>%
         dplyr::left_join(covs_df, by = "id") %>%
         dplyr::mutate(id = factor(id))
@@ -53,7 +56,7 @@ prep_geom_fauna <- function(fauna_geom, geom, raster_id) {
     fauna_geom
 }
 prep_data_bn <- function(data_sp) {
-    # called by prep_geom_data preparesdata per species (deletes dulpicates and
+    # called by prep_geom_data prepares data per species (deletes dulpicates and
     # NAs)
     data_sp %>%
         dplyr::select_if(is.factor) %>%

@@ -8,6 +8,8 @@
 #' @param geom region sf, polygon(s) that determine analysis area
 #' @param crs string specifying projection (proj4string) passed to
 #' sf::st_transform, defaults to lcc (Mex)
+#' @value Returns a list with a data.frame with covariates and the raster with
+#' ids.
 #' @export
 prep_geom_vars <- function(vars_paths, geom, crs = "lcc_mex") {
     if (crs == "lcc_mex") {

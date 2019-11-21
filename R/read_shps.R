@@ -14,7 +14,7 @@ read_shps <- function(shp_paths, crs = "lcc_mex", top = TRUE) {
         crs <- "+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=12 +lon_0=-102 +x_0=2500000 +y_0=0 +datum=WGS84 +units=m +no_defs"
     }
     if (length(shp_paths) == 1) {
-        geom <- sf::read_shp(shp_paths, crs = crs, top = top)
+        geom <- read_shp(shp_paths, crs = crs, top = top)
     } else {
         geom <- purrr::map(shp_paths, read_shp, crs = crs, top = top) %>%
             purrr::reduce(sf::st_union)
