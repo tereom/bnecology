@@ -4,13 +4,16 @@
 \alias{prep_geom_vars}
 \title{Creates a data.frame with covariates from rasters.}
 \usage{
-prep_geom_vars(vars_paths, geom, crs)
+prep_geom_vars(vars_paths, geom, crs = "lcc_mex")
 }
 \arguments{
 \item{vars_paths}{paths to rasters with covariates to consider, must include
 raster with id's (name of layer should contain "id")}
 
 \item{geom}{region sf, polygon(s) that determine analysis area}
+
+\item{crs}{string specifying projection (proj4string) passed to
+sf::st_transform, defaults to lcc (Mex)}
 }
 \description{
 Creates a data.frame with covariates from rasters.
