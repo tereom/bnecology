@@ -18,17 +18,26 @@
 #' IE score (and optionally the MAP) for each data point, and a raster with IE
 #' scores.
 #' @export
-compute_ei <- function(net, ie_node = "zz_delt_vp", geom, vars_paths, ie_levels,
+compute_ei <- function(net, ei_node = "zz_delt_vp", geom, vars_paths, ei_levels,
     map = FALSE, crs = "lcc_mex") {
     if (crs == "lcc_mex") {
         crs <- "+proj=lcc +lat_1=17.5 +lat_2=29.5 +lat_0=12 +lon_0=-102 +x_0=2500000 +y_0=0 +datum=WGS84 +units=m +no_defs"
     }
 
     # select only variables in markov blanket for faster computation
-    mb_ie <- bnlearn::mb(net$bn_str, ie_node)
+    mb_ei <- bnlearn::mb(net$bn_str, ei_node)
     vars_names <- basename(vars_paths) %>% tools::file_path_sans_ext()
-    ind_mb <- (vars_names %in% mb_ie | stringr::str_detect(vars_names, "id")) &
-        !(vars_names == ie_node)
+    ind_mb <- (vars_names %in% mb_ei | stringr::str_detect(vars_names, "id"))
+
+    # if ecological integrity is included in variable paths, the returning data
+    # frame will include a column with the info for model evaluation
+    ei_paths <- stringr::str_detect(vars_paths, ei_node)
+    ei_in_paths <- purrr::has_element(ei_paths, TRUE)
+    if (ei_in_paths) {
+        vars_ei <- ei_paths | stringr::str_detect(vars_names, "id")
+        vars_ei_df <- prep_geom_vars(vars_paths[vars_ei], geom, crs = crs)$vars_df %>%
+            dplyr::select(-x, -y)
+    }
     vars <- prep_geom_vars(vars_paths[ind_mb], geom, crs = crs)
     vars_bn <- dplyr::select_if(vars$vars_df, is.factor)
     vars_bn_distinct <- dplyr::distinct(vars_bn)
@@ -36,32 +45,42 @@ compute_ei <- function(net, ie_node = "zz_delt_vp", geom, vars_paths, ie_levels,
     # compile and predict
     net_fit <- net_ex$fit
     comp <- gRbase::compile(bnlearn::as.grain(net_fit))
-    pred_ie_dist <- predict(comp, ie_node, newdata = vars_bn_distinct,
+    pred_ei_dist <- predict(comp, ei_node, newdata = vars_bn_distinct,
         type = "distribution")
 
-    mat_pred <- pred_ie_dist$pred[[ie_node]][, ie_levels]
-    ie_coef <- int_midpoint(ie_levels)
-    ie_score <- mat_pred %*% ie_coef %>% as.numeric()
-    ie_class <- ie_levels[apply(mat_pred, 1, which.max)]
+    mat_pred <- pred_ei_dist$pred[[ei_node]][, ei_levels]
+    ei_coef <- int_midpoint(ei_levels)
+    ei_score <- mat_pred %*% ei_coef %>% as.numeric()
+    ei_score_var <- as.numeric(mat_pred %*% (ei_coef ^ 2)) - (ei_score ^ 2)
+    ei_class <- ei_levels[apply(mat_pred, 1, which.max)]
 
     vars_bn_pred <- vars_bn_distinct %>%
-        tibble::add_column(ie_score = ie_score) %>%
-        tibble::add_column(ie_class_max = ie_class)
+        tibble::add_column(ei_score = ei_score) %>%
+        tibble::add_column(ei_score_var = ei_score_var) %>%
+        tibble::add_column(ei_class_max = ei_class)
+
     if (map) {
-        pred_ie_class <- predict(comp, ie_node, newdata = vars_bn_distinct,
+        pred_ei_class <- predict(comp, ei_node, newdata = vars_bn_distinct,
             type = "class")
         vars_bn_pred <- vars_bn_pred %>%
-            tibble::add_column(ie_class_map = pred_ie_class$pred[[ie_node]])
+            tibble::add_column(ei_class_map = pred_ei_class$pred[[ei_node]])
     }
     vars_bn_pred <- vars$vars_df %>%
-        left_join(vars_bn_pred)
-    vars_bn_ie <- vars_bn_pred %>% dplyr::select(ie_score, id)
+        left_join(vars_bn_pred, by = mb_ei)
 
-    # return raster with IE, use raster_id as basis
+    if (ei_in_paths) {
+        vars_bn_pred <- vars_bn_pred %>%
+            left_join(vars_ei_df, by = "id")
+    }
+    vars_bn_ei <- vars_bn_pred %>% dplyr::select(ei_score, id)
+
+    # return raster with ei, use raster_id as basis
     names(vars$raster_id) <- "id"
-    raster_ie <- raster::subs(vars$raster_id, vars_bn_ie, by = "id",
-        which = "ie_score", subsWithNA = TRUE)
-    list(ie_df = vars_bn_pred, raster_ie = raster_ie)
+    raster_ei <- raster::subs(vars$raster_id, vars_bn_ei, by = "id",
+        which = "ei_score", subsWithNA = TRUE) %>%
+        raster::crop(y = geom) %>%
+        raster::mask(mask = geom)
+    list(ei_df = vars_bn_pred, raster_ei = raster_ei)
 }
 int_midpoint <- function(interval) {
     min_val <- stringr::str_extract(interval, "[0-9]+") %>%
