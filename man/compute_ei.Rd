@@ -4,27 +4,27 @@
 \alias{compute_ei}
 \title{Computes de Ecosystem Integrity Index for given a Bayesian Network}
 \usage{
-compute_ei(net, ie_node = "zz_delt_vp", geom, vars_paths, ie_levels,
+compute_ei(net, ei_node = "zz_delt_vp", geom, vars_paths, ei_levels,
   map = FALSE, crs = "lcc_mex")
 }
 \arguments{
 \item{net}{list with bayesian network structure and fit, as returned by
 fit_bn}
 
-\item{ie_node}{character denoting the node corresponding to IE}
-
 \item{geom}{region sf, polygon(s) that determine analysis area}
 
 \item{vars_paths}{paths to rasters with covariates to be included in BN}
-
-\item{ie_levels}{if IE is interval, character string determining the IE
-levels}
 
 \item{map}{logical value indicating if the MAP (maximum a posteriori)
 class should be returned}
 
 \item{crs}{string specifying projection (proj4string) passed to
 sf::st_transform, defaults to lcc (Mex)}
+
+\item{ie_node}{character denoting the node corresponding to IE}
+
+\item{ie_levels}{if IE is interval, character string determining the IE
+levels}
 }
 \description{
 Computes de Ecosystem Integrity Index for given a Bayesian Network
